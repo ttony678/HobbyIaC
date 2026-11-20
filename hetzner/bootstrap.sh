@@ -69,7 +69,10 @@ tailscale serve status
 # --- Nightly backup cron (02:00 local) ---
 cp "$(dirname "$0")/backup.sh" /usr/local/bin/hobby-backup.sh
 chmod +x /usr/local/bin/hobby-backup.sh
-(crontab -l 2>/dev/null | grep -v hobby-backup; echo "0 2 * * * /usr/local/bin/hobby-backup.sh") | crontab -
+# The || true matters: on a fresh VM there is no crontab yet, so
+# `crontab -l` and `grep -v` both exit 1, and with set -e + pipefail that
+# would kill the script before the echo runs.
+(crontab -l 2>/dev/null | grep -v hobby-backup || true; echo "0 2 * * * /usr/local/bin/hobby-backup.sh") | crontab -
 
 echo "Bootstrap done. Next: deploy/deploy.sh ships the app bundles and data,"
 echo "then 'systemctl start pantry splitter' brings both apps up."
