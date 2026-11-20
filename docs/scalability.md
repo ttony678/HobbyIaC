@@ -41,3 +41,43 @@ one process and sends its API calls and SSE connection to the other.
 
 Pantry and Splitter. Both apps follow the same shape, so the same split
 applies to each.
+
+## Multi-user SSE
+
+Recorded Nov 20, 2026, per Tony. Also future design, not to be built now.
+
+Today the SSE message is almost nothing: `{"queryKeys": []}`, an empty list
+meaning "something changed." No user, no trip, no list. Every connected
+client gets the same message, treats it as a trigger, runs its revision
+check, and refetches only if its revision moved. That works now because it
+is one household and a handful of clients.
+
+For multi-user with sharing (around 1000 users), the broadcast is the
+thing that breaks: a change to one list would wake every client, and each
+client would get events for lists it cannot see. The shape that fits is
+per-list channels. A list is the unit of sharing, so the server keeps a
+client set per list, not one global set. When a mutation touches a list, it
+broadcasts only to that list's clients. The message then carries the list
+ID and that list's revision, and optionally which queries changed and who
+made the change. The client discards it if the list ID is not one it is
+viewing, or if the revision is not newer than its own.
+
+Two pieces make that work. First, per-list revisions instead of one global
+revision, so a change to list A does not bump list B and wake its clients.
+Second, the SSE connection is authenticated at connect time, so the server
+only sends a client events for lists it can access, and never leaks that
+another list changed at all.
+
+Keep the event as a trigger, not the data. The client still refetches
+through the normal authenticated API, which is where access control lives.
+That keeps the SSE layer small and the authorization in one place.
+
+At 1000 users that scales fine: a mutation wakes only the handful of
+clients on that list, not all 1000. The global broadcast is what would not
+scale.
+
+Prerequisite: per-list revisions do not exist yet. Pantry today has a
+single global revision counter (one row in the `meta` table, key
+"revision"), because there is only one list. Per-list revisions arrive
+with the multi-user data model (a lists table, `list_id` on every row, and
+a revision counter per list).
