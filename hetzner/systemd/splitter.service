@@ -11,11 +11,15 @@ ExecStart=/usr/local/bin/bun /opt/splitter/shim.js
 Restart=on-failure
 RestartSec=5
 Environment=PORT=3002
-# LLM provider for receipt scanning. Set on the VM, never in the repo.
-# Environment=LLM_PROVIDER=openai
-# Environment=LLM_BASE_URL=https://api.openai.com/v1
-# Environment=LLM_API_KEY=...
-# Environment=LLM_MODEL=gpt-4o-mini
+# Receipt photos live in /opt/splitter/photos (seeded from the workspace
+# blobs/ dir on first deploy). The shim defaults PHOTOS_DIR to ./blobs,
+# so set it explicitly to the VM path.
+Environment=PHOTOS_DIR=/opt/splitter/photos
+# LLM provider for receipt scanning. The key lives in /etc/splitter.env
+# on the VM (root-only, 600), never in the repo. The leading '-' makes
+# the file optional so a missing env file does not block startup;
+# receipt scanning then fails with a clean error instead.
+EnvironmentFile=-/etc/splitter.env
 
 [Install]
 WantedBy=multi-user.target
