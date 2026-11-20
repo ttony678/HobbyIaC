@@ -71,6 +71,21 @@ systemctl enable pantry splitter
 # Tailscale 1.104+ dropped the old `serve <path> <target>` form; the path
 # now goes in --set-path. Requires the Serve feature to be enabled on the
 # tailnet (admin console) or these commands fail.
+#
+# Fail fast with a clear, actionable error if Serve is not enabled,
+# instead of dying mid-script on a confusing serve error. The check greps
+# the status output for the "not enabled" message rather than trusting
+# the exit code, so it triggers on the real disabled output either way.
+# The script is idempotent, so after enabling Serve, re-running it picks
+# up where it left off.
+serve_out=$(tailscale serve status 2>&1) || true
+if echo "$serve_out" | grep -qi "not enabled"; then
+  echo "ERROR: Tailscale Serve is not enabled on this tailnet." >&2
+  echo "The apps cannot be exposed until it is enabled." >&2
+  echo "$serve_out" >&2
+  echo "Enable Serve in the Tailscale admin console, then re-run this script." >&2
+  exit 1
+fi
 tailscale serve --bg --https=443 --set-path=/pantry "http://127.0.0.1:${PANTRY_PORT}"
 tailscale serve --bg --https=443 --set-path=/splitter "http://127.0.0.1:${SPLITTER_PORT}"
 tailscale serve status
