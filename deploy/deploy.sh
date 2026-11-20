@@ -25,6 +25,20 @@ done
 
 echo "Deploying $APP to $VM (seed=$SEED)..."
 
+# OpenSSH runs as root and reads /root/.ssh/config, which is ephemeral and
+# is wiped on a VM replacement. The persistent master copy lives at
+# ~/.ssh/config. Restore it if missing so SSH uses the egress proxy
+# (without it SSH falls back to a direct connection the egress resets).
+if [ ! -f /root/.ssh/config ]; then
+  if [ ! -f "$HOME/.ssh/config" ]; then
+    echo "SSH config missing: neither /root/.ssh/config nor $HOME/.ssh/config exists" >&2
+    exit 1
+  fi
+  echo "Restoring /root/.ssh/config from $HOME/.ssh/config (VM replacement wiped it)..."
+  cp "$HOME/.ssh/config" /root/.ssh/config
+  chmod 600 /root/.ssh/config
+fi
+
 deploy_app() {
   local name="$1" src="$2" dest="$3"
   echo "--- $name: shipping shim, server, node_modules, client ---"
