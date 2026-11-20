@@ -28,6 +28,9 @@ echo "Deploying $APP to $VM (seed=$SEED)..."
 deploy_app() {
   local name="$1" src="$2" dest="$3"
   echo "--- $name: shipping shim, server, node_modules, client ---"
+  # rsync creates the destination dir itself but not missing parents,
+  # so make the tree first or the server/dist rsync fails with code 11.
+  ssh "$VM" "mkdir -p $dest/server/dist $dest/node_modules $dest/client"
   rsync -a --delete "$src/shim.js" "$VM:$dest/shim.js"
   rsync -a --delete "$src/server/dist/" "$VM:$dest/server/dist/"
   rsync -a --delete -z "$src/node_modules/" "$VM:$dest/node_modules/"
