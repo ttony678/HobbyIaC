@@ -1,0 +1,21 @@
+[Unit]
+Description=Splitter app (better Splitwise/Tab)
+After=network-online.target tailscaled.service
+Wants=network-online.target
+
+[Service]
+User=apps
+WorkingDirectory=/opt/splitter
+# TBD (pending shim proof): exact entry point filename from the shim build.
+ExecStart=/usr/local/bin/bun /opt/splitter/shim.js
+Restart=on-failure
+RestartSec=5
+Environment=PORT=3002
+# LLM provider for receipt scanning. Set on the VM, never in the repo.
+# Environment=LLM_PROVIDER=openai
+# Environment=LLM_BASE_URL=https://api.openai.com/v1
+# Environment=LLM_API_KEY=...
+# Environment=LLM_MODEL=gpt-4o-mini
+
+[Install]
+WantedBy=multi-user.target

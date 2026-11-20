@@ -1,0 +1,16 @@
+[Unit]
+Description=Pantry app (better AnyList)
+After=network-online.target tailscaled.service
+Wants=network-online.target
+
+[Service]
+User=apps
+WorkingDirectory=/opt/pantry
+# TBD (pending shim proof): exact entry point filename from the shim build.
+ExecStart=/usr/local/bin/bun /opt/pantry/shim.js
+Restart=on-failure
+RestartSec=5
+Environment=PORT=3001
+
+[Install]
+WantedBy=multi-user.target

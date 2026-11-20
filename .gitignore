@@ -1,0 +1,10 @@
+# HobbyIaC: never commit secrets, databases, or photos.
+.env
+*.db
+*.db-wal
+*.db-shm
+photos/
+backups/
+*.pem
+*.key
+.DS_Store
