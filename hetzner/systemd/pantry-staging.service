@@ -1,0 +1,17 @@
+[Unit]
+Description=Pantry app (staging, better AnyList)
+After=network-online.target tailscaled.service
+Wants=network-online.target
+
+[Service]
+User=apps
+WorkingDirectory=/opt/pantry-staging
+# Self-contained staging monolith: its own process, its own DB
+# (/opt/pantry-staging/app.db), its own port. No shared state with prod.
+ExecStart=/usr/local/bin/bun /opt/pantry-staging/shim.js
+Restart=on-failure
+RestartSec=5
+Environment=PORT=3003
+
+[Install]
+WantedBy=multi-user.target

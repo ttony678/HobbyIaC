@@ -1,0 +1,27 @@
+[Unit]
+Description=Splitter app (staging, better Splitwise/Tab)
+After=network-online.target tailscaled.service
+Wants=network-online.target
+
+[Service]
+User=apps
+WorkingDirectory=/opt/splitter-staging
+# Self-contained staging monolith: its own process, its own DB
+# (/opt/splitter-staging/app.db), its own photos, its own port. No shared
+# state with prod, so its SSE stream can never cross into prod.
+ExecStart=/usr/local/bin/bun /opt/splitter-staging/shim.js
+Restart=on-failure
+RestartSec=5
+Environment=PORT=3004
+# Receipt photos live in /opt/splitter-staging/photos (seeded from the
+# workspace blobs/ dir on first staging deploy). The shim defaults
+# PHOTOS_DIR to ./blobs, so set it explicitly to the staging path.
+Environment=PHOTOS_DIR=/opt/splitter-staging/photos
+# No EnvironmentFile here on purpose: the prod OpenAI key in
+# /etc/splitter.env stays out of staging. Receipt scanning in staging
+# fails cleanly without it, which keeps staging isolated and avoids
+# staging charges. Wire a separate staging key here only if receipt
+# scanning needs testing in staging.
+
+[Install]
+WantedBy=multi-user.target

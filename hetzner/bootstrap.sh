@@ -33,7 +33,10 @@ systemctl start fail2ban 2>/dev/null || systemctl restart fail2ban
 # --- App user and dirs ---
 id -u "$APP_USER" >/dev/null 2>&1 || useradd -m -s /usr/sbin/nologin "$APP_USER"
 mkdir -p /opt/pantry /opt/splitter /opt/splitter/photos /var/backups/hobby
-chown -R "$APP_USER:$APP_USER" /opt/pantry /opt/splitter /var/backups/hobby
+# Staging instances: self-contained monoliths, one per app, with their own
+# dirs and DBs so staging never shares state with prod.
+mkdir -p /opt/pantry-staging /opt/splitter-staging /opt/splitter-staging/photos
+chown -R "$APP_USER:$APP_USER" /opt/pantry /opt/splitter /opt/pantry-staging /opt/splitter-staging /var/backups/hobby
 
 # --- SSH hardening ---
 # Key-only auth. No account on this VM has a usable password (root is
@@ -80,8 +83,12 @@ tailscale status
 # --- Systemd units ---
 cp "$(dirname "$0")/systemd/pantry.service" /etc/systemd/system/pantry.service
 cp "$(dirname "$0")/systemd/splitter.service" /etc/systemd/system/splitter.service
+# Staging units: separate services so staging and prod are independent
+# processes with their own DBs, ports, and SSE streams.
+cp "$(dirname "$0")/systemd/pantry-staging.service" /etc/systemd/system/pantry-staging.service
+cp "$(dirname "$0")/systemd/splitter-staging.service" /etc/systemd/system/splitter-staging.service
 systemctl daemon-reload
-systemctl enable pantry splitter
+systemctl enable pantry splitter pantry-staging splitter-staging
 
 # --- Serve both apps on the tailnet ---
 # Pantry at /pantry, Splitter at /splitter. No public ports.
@@ -105,6 +112,10 @@ if echo "$serve_out" | grep -qi "not enabled"; then
 fi
 tailscale serve --bg --https=443 --set-path=/pantry "http://127.0.0.1:${PANTRY_PORT}"
 tailscale serve --bg --https=443 --set-path=/splitter "http://127.0.0.1:${SPLITTER_PORT}"
+# Staging paths: separate Serve entries so each staging monolith has its
+# own URL and its own SSE stream, never crossed with prod.
+tailscale serve --bg --https=443 --set-path=/pantry-staging "http://127.0.0.1:3003"
+tailscale serve --bg --https=443 --set-path=/splitter-staging "http://127.0.0.1:3004"
 tailscale serve status
 
 # --- Nightly backup cron (02:00 local) ---
