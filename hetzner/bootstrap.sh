@@ -39,7 +39,14 @@ systemctl reload sshd 2>/dev/null || systemctl reload ssh
 # --- Bun ---
 if ! command -v bun >/dev/null 2>&1; then
   curl -fsSL https://bun.sh/install | bash
-  ln -sf /root/.bun/bin/bun /usr/local/bin/bun
+fi
+# Copy (not symlink) the binary to /usr/local/bin. The app services run
+# as user `apps`, which cannot traverse root's home, so a symlink into
+# /root/.bun fails with "Permission denied" (status 203/EXEC).
+if [ -f "$HOME/.bun/bin/bun" ]; then
+  rm -f /usr/local/bin/bun
+  cp "$HOME/.bun/bin/bun" /usr/local/bin/bun
+  chmod 755 /usr/local/bin/bun
 fi
 bun --version
 

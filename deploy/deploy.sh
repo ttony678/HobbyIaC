@@ -34,7 +34,7 @@ deploy_app() {
   rsync -a --delete "$src/shim.js" "$VM:$dest/shim.js"
   rsync -a --delete "$src/server/dist/" "$VM:$dest/server/dist/"
   rsync -a --delete -z "$src/node_modules/" "$VM:$dest/node_modules/"
-  rsync -a --delete "$src/client/dist/" "$VM:$dest/client/"
+  rsync -a --delete "$src/client/dist/" "$VM:$dest/client/dist/"
   if [ "$SEED" = 1 ]; then
     echo "--- $name: seeding DB ---"
     rsync -a "$src"/app.db* "$VM:$dest/"
