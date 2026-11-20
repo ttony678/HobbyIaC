@@ -59,8 +59,11 @@ systemctl enable pantry splitter
 
 # --- Serve both apps on the tailnet ---
 # Pantry at /pantry, Splitter at /splitter. No public ports.
-tailscale serve --bg --https=443 "/pantry" "http://127.0.0.1:${PANTRY_PORT}"
-tailscale serve --bg --https=443 "/splitter" "http://127.0.0.1:${SPLITTER_PORT}"
+# Tailscale 1.104+ dropped the old `serve <path> <target>` form; the path
+# now goes in --set-path. Requires the Serve feature to be enabled on the
+# tailnet (admin console) or these commands fail.
+tailscale serve --bg --https=443 --set-path=/pantry "http://127.0.0.1:${PANTRY_PORT}"
+tailscale serve --bg --https=443 --set-path=/splitter "http://127.0.0.1:${SPLITTER_PORT}"
 tailscale serve status
 
 # --- Nightly backup cron (02:00 local) ---
