@@ -27,6 +27,15 @@ id -u "$APP_USER" >/dev/null 2>&1 || useradd -m -s /usr/sbin/nologin "$APP_USER"
 mkdir -p /opt/pantry /opt/splitter /opt/splitter/photos /var/backups/hobby
 chown -R "$APP_USER:$APP_USER" /opt/pantry /opt/splitter /var/backups/hobby
 
+# --- SSH hardening ---
+# Key-only auth. No account on this VM has a usable password (root is
+# locked, apps has nologin), but turn password auth off outright so a
+# password can never become a way in. Safe to re-run.
+mkdir -p /etc/ssh/sshd_config.d
+printf "PasswordAuthentication no\n" > /etc/ssh/sshd_config.d/99-disable-password-auth.conf
+sshd -t
+systemctl reload sshd 2>/dev/null || systemctl reload ssh
+
 # --- Bun ---
 if ! command -v bun >/dev/null 2>&1; then
   curl -fsSL https://bun.sh/install | bash
