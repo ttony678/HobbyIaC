@@ -20,7 +20,15 @@ echo "Bootstrapping $HOSTNAME ($SERVER_TYPE in $REGION)..."
 
 # --- Base packages ---
 apt-get update -y
-apt-get install -y curl unzip sqlite3 rsync cron
+apt-get install -y curl unzip sqlite3 rsync cron fail2ban
+
+# --- fail2ban (SSH brute-force defense in depth) ---
+# Key-only auth already blocks brute force, but fail2ban adds rate
+# limiting so a scanner cannot hammer port 22 forever. The sshd jail is
+# disabled by default in the package config, so enable it explicitly.
+printf "[sshd]\nenabled = true\n" > /etc/fail2ban/jail.local
+systemctl enable fail2ban
+systemctl start fail2ban 2>/dev/null || systemctl restart fail2ban
 
 # --- App user and dirs ---
 id -u "$APP_USER" >/dev/null 2>&1 || useradd -m -s /usr/sbin/nologin "$APP_USER"
@@ -33,6 +41,8 @@ chown -R "$APP_USER:$APP_USER" /opt/pantry /opt/splitter /var/backups/hobby
 # password can never become a way in. Safe to re-run.
 mkdir -p /etc/ssh/sshd_config.d
 printf "PasswordAuthentication no\n" > /etc/ssh/sshd_config.d/99-disable-password-auth.conf
+# X11 forwarding is unused; turn it off to shrink the surface.
+printf "X11Forwarding no\n" > /etc/ssh/sshd_config.d/99-disable-x11-forwarding.conf
 sshd -t
 systemctl reload sshd 2>/dev/null || systemctl reload ssh
 
