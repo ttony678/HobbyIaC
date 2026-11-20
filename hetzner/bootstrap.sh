@@ -126,5 +126,13 @@ chmod +x /usr/local/bin/hobby-backup.sh
 # would kill the script before the echo runs.
 (crontab -l 2>/dev/null | grep -v hobby-backup || true; echo "0 2 * * * /usr/local/bin/hobby-backup.sh") | crontab -
 
+# --- Users sync cron (every 5 minutes) ---
+# Keeps the users tables in Pantry and Splitter in sync, bidirectionally.
+# The script is a no-op until both users tables exist (the migrations
+# have not landed yet), so it is safe to install before they are live.
+cp "$(dirname "$0")/sync-users.py" /usr/local/bin/hobby-sync-users.py
+chmod +x /usr/local/bin/hobby-sync-users.py
+(crontab -l 2>/dev/null | grep -v hobby-sync-users || true; echo "*/5 * * * * /usr/local/bin/hobby-sync-users.py >> /var/log/hobby-sync-users.log 2>&1") | crontab -
+
 echo "Bootstrap done. Next: deploy/deploy.sh ships the app bundles and data,"
 echo "then 'systemctl start pantry splitter' brings both apps up."
