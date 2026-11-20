@@ -12,12 +12,9 @@ HOSTNAME="${HOSTNAME:-hobby-vm}"
 PANTRY_PORT="${PANTRY_PORT:-3001}"
 SPLITTER_PORT="${SPLITTER_PORT:-3002}"
 APP_USER="${APP_USER:-apps}"
-# TAILSCALE_AUTHKEY must be set in the environment (ephemeral auth key).
-
-if [ -z "${TAILSCALE_AUTHKEY:-}" ]; then
-  echo "TAILSCALE_AUTHKEY is not set. Generate an ephemeral auth key in the Tailscale admin panel and re-run." >&2
-  exit 1
-fi
+# TAILSCALE_AUTHKEY must be set in the environment on first run (an
+# ephemeral auth key). It is single-use, so a re-run must not require it:
+# the join step below is skipped when the node is already on the tailnet.
 
 echo "Bootstrapping $HOSTNAME ($SERVER_TYPE in $REGION)..."
 
@@ -41,7 +38,17 @@ bun --version
 if ! command -v tailscale >/dev/null 2>&1; then
   curl -fsSL https://tailscale.com/install.sh | sh
 fi
-tailscale up --authkey="$TAILSCALE_AUTHKEY" --hostname="$HOSTNAME" --accept-routes=false
+# Join the tailnet only if not already on it. The auth key is single-use,
+# so a re-run must not require it or call `tailscale up` again.
+if tailscale status >/dev/null 2>&1; then
+  echo "Already on the tailnet, skipping tailscale up."
+else
+  if [ -z "${TAILSCALE_AUTHKEY:-}" ]; then
+    echo "TAILSCALE_AUTHKEY is not set. Generate an ephemeral auth key in the Tailscale admin panel and re-run." >&2
+    exit 1
+  fi
+  tailscale up --authkey="$TAILSCALE_AUTHKEY" --hostname="$HOSTNAME" --accept-routes=false
+fi
 tailscale status
 
 # --- Systemd units ---
