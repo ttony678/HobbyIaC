@@ -7,7 +7,11 @@
 set -euo pipefail
 DOMAIN="${1:-$(curl -s https://ifconfig.me)}"
 TEST_PASSWORD="${2:-$(openssl rand -hex 8)}"
-AUTHELIA_VERSION="${AUTHELIA_VERSION:-v4.39.28}"
+# Version: pin via AUTHELIA_VERSION env var for reproducibility, otherwise
+# fetch the latest release from GitHub so a fresh setup is never stale.
+if [ -z "${AUTHELIA_VERSION:-}" ]; then
+  AUTHELIA_VERSION="$(curl -s https://api.github.com/repos/authelia/authelia/releases/latest | python3 -c "import sys,json; print(json.load(sys.stdin)['tag_name'])")"
+fi
 PANTRY_STAGING_PORT="${PANTRY_STAGING_PORT:-3003}"
 
 apt-get update -qq
