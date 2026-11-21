@@ -46,3 +46,5 @@ committed.
   go-ahead; see the Hosting - Splitter and Pantry chat).
 - [ ] First VM built from `hetzner/bootstrap.sh`.
 - [ ] Pantry and Splitter verified live from a phone on the tailnet.
+
+<!-- PR workflow test 2, 2026-11-20: branch + PR + bypass merge -->
