@@ -1,0 +1,14 @@
+# HobbyIaC: never commit secrets, databases, or photos.
+.env
+*.db
+*.db-wal
+*.db-shm
+photos/
+backups/
+*.pem
+*.key
+# Bare SSH private keys have no .key extension, so they need their own
+# patterns or a stray id_ed25519 could be committed by accident.
+id_ed25519*
+id_rsa*
+.DS_Store

@@ -1,0 +1,25 @@
+[Unit]
+Description=Splitter app (better Splitwise/Tab)
+After=network-online.target tailscaled.service
+Wants=network-online.target
+
+[Service]
+User=apps
+WorkingDirectory=/opt/splitter
+# TBD (pending shim proof): exact entry point filename from the shim build.
+ExecStart=/usr/local/bin/bun /opt/splitter/shim.js
+Restart=on-failure
+RestartSec=5
+Environment=PORT=3002
+# Receipt photos live in /opt/splitter/photos (seeded from the workspace
+# blobs/ dir on first deploy). The shim defaults PHOTOS_DIR to ./blobs,
+# so set it explicitly to the VM path.
+Environment=PHOTOS_DIR=/opt/splitter/photos
+# LLM provider for receipt scanning. The key lives in /etc/splitter.env
+# on the VM (root-only, 600), never in the repo. The leading '-' makes
+# the file optional so a missing env file does not block startup;
+# receipt scanning then fails with a clean error instead.
+EnvironmentFile=-/etc/splitter.env
+
+[Install]
+WantedBy=multi-user.target
